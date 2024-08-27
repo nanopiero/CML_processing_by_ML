@@ -10,7 +10,6 @@ import torch
 import numpy as np
 from torchvision import transforms
 import torch.nn.functional as F
-import torchvision.transforms.functional as TF
 import random
 
 
