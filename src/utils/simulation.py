@@ -225,26 +225,17 @@ def generate_pair(duration, distance):
     _, event_times = simulate_neyman_scott_process_1d(h=ppp_intensity, theta=10., p=3., duration=duration)
     # t = time.time()
     times, smoothed_series = smooth_events_with_gaussian_window(event_times, duration=duration, sigma=2)
-    # print('0', time.time() - t)
-    # t = time.time()
-    converted_smoothed_series = convert(smoothed_series)
-    # print('1',time.time() - t)
-    # t = time.time()
-    converted_smoothed_series = torch.tensor(converted_smoothed_series, dtype=torch.float32)
-    # print('2',time.time() - t)
-    # t = time.time()
-    convolved_smoothed_series = apply_conv1d_with_custom_kernel(converted_smoothed_series, KERNEL)
-    # print('3',time.time() - t)  
-    # t = time.time()
-    lf_noise = generate_random_sinusoidal_process(duration)
-    # print('4',time.time() - t)
-    # t = time.time()
-    hf_noise = get_gaussian_noise(convolved_smoothed_series, noise_scale_func)
-    # print('5',time.time() - t)
-    noisy1_series = convolved_smoothed_series + lf_noise
-
     ground_truth_specific = torch.tensor(smoothed_series, dtype=torch.float32)
     ground_truth = ground_truth_specific * 1/distance
+
+    converted_smoothed_series = convert(smoothed_series)
+    converted_smoothed_series = torch.tensor(converted_smoothed_series, dtype=torch.float32)
+    convolved_smoothed_series = apply_conv1d_with_custom_kernel(converted_smoothed_series, KERNEL)
+
+    lf_noise = generate_random_sinusoidal_process(duration)
+    hf_noise = get_gaussian_noise(convolved_smoothed_series, noise_scale_func)
+
+    noisy1_series = convolved_smoothed_series + lf_noise
     noisy_series = noisy1_series + hf_noise
 
     return ground_truth, noisy_series
@@ -280,5 +271,6 @@ class TensorPairDataset(Dataset):
 # Step 2: Create the DataLoader
 def create_dataloader(duration, idx2distance, batch_size, shuffle=True):
     dataset = TensorPairDataset(duration, idx2distance)
+    # num_workers = 2 for colab
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=2)
     return dataloader

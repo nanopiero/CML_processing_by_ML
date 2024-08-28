@@ -264,7 +264,7 @@ class UNet_causal_5mn_atrous_rescale(nn.Module):
 
 
 class UNet_causal_5mn_atrous_complex_rescale(nn.Module):
-    def __init__(self, n_channels, n_classes, size=64, dilation=1, atrous_rates=[6, 12, 18], fixed_cumul=False, additional_parameters=2, input_size_fc_layer=5, hidden_size_fc_layer=5):
+    def __init__(self, n_channels, n_classes, size=64, dilation=1, atrous_rates=[6, 12, 18], fixed_cumul=False, additional_parameters=2, num_cmls=1000, input_size_fc_layer=5, hidden_size_fc_layer=5):
         super(UNet_causal_5mn_atrous_complex_rescale, self).__init__()
         self.inc = double_conv_causal(n_channels, size)  # Using double_conv_causal directly for simplicity
         self.down1 = Down_causal(size, 2*size)
@@ -280,9 +280,9 @@ class UNet_causal_5mn_atrous_complex_rescale(nn.Module):
         self.input_size_fc_layer = input_size_fc_layer
         self.hidden_size_fclayer = hidden_size_fc_layer
         self.p = nn.Parameter(torch.ones(16))
-        self.linears1 = nn.ModuleList([nn.Linear(self.input_size_fc_layer, self.hidden_size_fclayer) for i in range(5000)])
-        self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fclayer, 1) for i in range(5000)])
-
+        self.num_cmls = num_cmls
+        self.linears1 = nn.ModuleList([nn.Linear(self.input_size_fc_layer, self.hidden_size_fc_layer) for i in range(self.num_cmls + 1)])
+        self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fclayer, 1) for i in range(self.num_cmls + 1)])
         self.fixed_cumul = fixed_cumul
         self.pad_size = 20 - 1
         self.relu = nn.ReLU()
