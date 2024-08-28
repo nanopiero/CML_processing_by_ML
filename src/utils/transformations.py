@@ -29,7 +29,7 @@ class TimeSeriesTransform:
                  random_renorm_generic=False
                  ):
         
-        self.completion = completion  # putain de virgule enlevée le 23/05 à 00:21
+        self.completion = completion
         self.min_input_value = min_input_value
         self.random_shifts = random_shifts
         self.additive_noise = additive_noise
@@ -52,8 +52,8 @@ class TimeSeriesTransform:
 
     def __call__(self, inputs, targets, crop_start=None, ind_cml=0):
         """
-        crop_start permet de fixer le reste modulo 20 // step_cropping
-        ne fonctionne que lorsque rescale_inputs = "nan_padding" 
+        The variable crop_start allows to set the onset of the crop modulo 20 
+        It only works when rescale_inputs = "nan_padding" 
         """
         start = 0
         
@@ -70,8 +70,6 @@ class TimeSeriesTransform:
                 
             mask = inputs[:2,...] <= -50
             inputs[:2,...][mask] = 0
-            
-            # s'il en manque, on met à zéro
             inputs[:2,...] = torch.clamp(inputs[:2,...], min=self.min_input_value, max=50) / 10.
 
         else:
@@ -98,15 +96,12 @@ class TimeSeriesTransform:
                 # general case
                 if crop_start is None :
                     start = random.randint(0, (inputs.shape[1] - self.size_cropping) // self.step_cropping) * self.step_cropping
-                    # print(start, self.size_cropping)
+
                 # if daug_by_sum
                 else: 
                     remainder = crop_start % self.spacing 
                     start = random.randint(0, (inputs.shape[1] - self.size_cropping) // self.spacing - 1) * self.spacing + remainder
-                    # print(remainder, start, self.size_cropping)
-                # testx :
-                # start = 0 * self.step_cropping
-                # print(start)
+
                 inputs = inputs[:, start:start + self.size_cropping]
                 targets = targets[:, start:start + self.size_cropping]
             

@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Créé le 06/05/2024 à partir de train/train_1GPU_newdaug.py (coca)
-
-Appel:
-mode interactif : 
-python learning/preprocessing/train_1GPU_MAE_PNP.py fromscratch UNet_causal -bs 128 -ne 100 -pr 20240506_exp0
-python learning/preprocessing/train_1GPU_MAE_PNP.py fromscratch UNet_causal -lr 0.003 -bs 128 -ne 100 -pr 20240506_exp1_ss30 -ss 30
-python learning/preprocessing/train_1GPU_MAE_PNP.py fromscratch UNet_causal  -bs 128 -ne 100 -pr 20240506_exp2_1j -cs 5760
-python learning/preprocessing/train_1GPU_MAE_PNP.py fromscratch UNet_causal  -bs 128 -ne 100 -pr 20240506_exp3_weightinglinear -w linear 
-@author: lepetit
+@author: nanopiero
 """
 
 
@@ -26,26 +18,18 @@ import pickle
 import numpy as np
 import sys
 import time
-sys.path.append('/home/mdso/lepetitp/ppc/WEBCAMS/src/raincell')
+sys.path.append('...')
 import torch
 
-from ia.learning.dependencies.transformations import TimeSeriesTransform
-from ia.learning.dependencies.datasets import TrainingDataset, custom_collate_fn
+from src.utils.transformations import TimeSeriesTransform
+from src.utils.datasets import TrainingDataset, custom_collate_fn
 from torch.utils.data import DataLoader, WeightedRandomSampler, SequentialSampler
 
-from ia.learning.dependencies.architectures import load_archi
-from ia.learning.dependencies.cost_functions import CombinedLoss, CompleteLoss, compute_metrics, compute_confusion_matrix
+from src.utils.architectures import load_archi
+from src.utils.cost_functions import CombinedLoss, CompleteLoss, compute_metrics, compute_confusion_matrix
 import torch.optim as optim
-from ia.learning.dependencies.scores import calculate_metrics, trailing_moving_average
+from src.utils.scores import calculate_metrics, trailing_moving_average
 
-
-print('disponibilite GPU: ')
-print(torch.cuda.is_available())
-print('-------------------')
-print('nombre de gpus')
-world_size = torch.cuda.device_count()
-print(world_size)
-print('----------')
 
 ##############################################################################
 ##############################################################################
@@ -116,8 +100,8 @@ print(args)
 
 
 batch_size = args.batch_size 
-num_epochs = args.num_epochs #180 #900
-archi = args.archi  #'resnet50_imagenet_mtl' 
+num_epochs = args.num_epochs
+archi = args.archi 
 load = args.load_params
 prefixe = args.prefixe
 step_size = args.step_size
@@ -203,8 +187,8 @@ else:
 
 print("model_name :" , model_name)
 
-dir_data = '/scratch/mdso/lepetitp/ppc/RAINCELL/datasets/debiasing_20240814'
-dir_models = "/scratch/mdso/lepetitp/ppc/RAINCELL/models/models_debiasing_20240814"
+dir_data = '...'
+dir_models = "..."
 
 # Checkpoints paths
 save_every = 1
@@ -223,7 +207,7 @@ PATH_bestloss_intra_segmentation_checkpoint = join(dir_models, model_name + "_bm
 
 # dictionnaire des md de l'ensemble des indices de CMLs:
 
-with open('/scratch/mdso/lepetitp/ppc/RAINCELL/METADATA/dict_indices_290424.pickle', 'rb') as file:
+with open('...', 'rb') as file:
     dict_indices = pickle.load(file)
     
 # get the links for which stats (used for sampling) are available
@@ -322,8 +306,6 @@ for step in datasets:
                                        num_workers=num_workers)
 
 
-
-# Access specific dataloader, for example:
 print("len dataloader train : ", len(sampler_train), " nb steps sampler train : ", nb_steps_sampler_train)
 print("len dataloader val intra : ", len(SequentialSampler(datasets['val_intra'])))
 if not no_val_inter:
@@ -354,10 +336,7 @@ if mode_complete_loss is not None:
 else :
     criterion = CombinedLoss(linear_balanced_loss = linear_balanced_loss)
     
-# criterion = nn.MSELoss()
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = step_size, gamma = gamma)
-# scheduler_start = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1., total_iters=5)
-
 
 ##############################################################################
 ##############################################################################
@@ -370,8 +349,6 @@ best_loss = [float('inf'), float('inf'), float('inf'), float('inf')]  # Initiali
 train_losses = []
 val_intra_losses = []
 val_inter_losses = []
-
-
 
 # if needed, init stats, best weights from checkpoint 
 print('fromscratch or checkpoint :')
@@ -405,10 +382,6 @@ if load != 'fromscratch':
     model.load_state_dict(model_weights)
     optimizer.load_state_dict(optimizer_state_dict)
     scheduler.load_state_dict(scheduler_state_dict)
-    # scheduler_start_state_dict = checkpoint['scheduler_start']
-    # scheduler_start.load_state_dict(scheduler_start_state_dict)
-    
-#     print_gpu_state(rank)
 
     del checkpoint, model_weights, \
         optimizer_state_dict, \
@@ -434,30 +407,16 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
     print('Epoch {} - [{},{}]'.format(epoch, last_epoch + 1, last_epoch + num_epochs))
     print('-' * 10)
     
-
-    # Training phase
     model.train()
-    
     running_MAE_loss = 0.0
     running_MSE_loss = 0.0
     running_segmentation_loss = 0.0
     train_confusion_matrix = np.zeros((2, 2), dtype=int)
-    # t = time.time()
+
     for batch_idx, (timestamps, noisy_series, reference, lengths, ids) in enumerate(dataloaders['train']):
-        # print('batch load ', time.time() - t)
-        
-        
-        # print(batch_idx)
-        
+
         inputs, targets = noisy_series.to(device), reference.to(device)
 
-        # if renorm_inputs: # (écrit le 15/07/2024 mais pas utilisé)
-        #     lengths = lengths.to(device) / 15000.
-        #     inputs /= lengths.view(inputs.shape[0],1,1)
-
-
-
-        # t1 = time.time()
         if input_lengths:
             lengths = lengths.to(device) / 50_000.
             inputs = torch.cat([inputs, lengths.view(inputs.shape[0],1,1).repeat(1,1,inputs.shape[2])], dim=1)
@@ -479,17 +438,10 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
             
         # Forward pass
         optimizer.zero_grad()           
-        # print('forward ', time.time() - t1)
-        # t2 = time.time()
-        MAE_loss, segmentation_loss, loss, batch_cm, MSE_loss = criterion(model.p[:5], outputs, targets, display_other_stats=False)[:5]  # Ensure that the arguments are correctly placed
-        # print('loss ', time.time() - t2)
-        # Backward and optimize
-        # t3 = time.time()
+        MAE_loss, segmentation_loss, loss, batch_cm, MSE_loss = \
+            criterion(model.p[:5], outputs, targets, display_other_stats=False)[:5]  
         loss.backward()
-        # print('backward ', time.time() - t3)
-        # t4 = time.time()
         optimizer.step()
-        # print('optim step ', time.time() - t4)
         
         del inputs, targets, outputs, loss
         torch.cuda.empty_cache()  
@@ -518,7 +470,7 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
 
     with torch.no_grad():
 
-        # Validation intra
+        # Validation on Val intra
         running_MAE_loss = 0.0
         running_MSE_loss_preds = 0.0
         running_MSE_loss_gt = 0.0
@@ -529,12 +481,7 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
         for timestamps, noisy_series, reference, lengths, ids in dataloaders['val_intra']:
             inputs, targets = noisy_series.to(device), reference.to(device)
             
-            # if renorm_inputs:
-            #     lengths = lengths.to(device) / 15000.
-            #     inputs /= lengths.view(inputs.shape[0],1,1)
-                
             # Forward pass
-            # outputs = model(inputs[:, :, 1:]) before the 18/05. But non 5min-causal
             if learned_outputs_rescaling:
                 outputs = model(inputs[:, :, :-1], indices=ids.to(device))
                 outputs, p = outputs
@@ -575,7 +522,7 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
         print(f'Accuracy: {accuracy:.4f}, CSI: {csi:.4f}, Sensitivity: {sensitivity:.4f}, Specificity: {specificity:.4f}, False Alarm Ratio: {false_alarm_ratio:.4f}')
         print('\n')
         
-        # Validation inter
+        # Validation on val inter
         if not no_val_inter:
             running_MAE_loss = 0.0
             running_MSE_loss_preds = 0.0
@@ -586,10 +533,6 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
             for timestamps, noisy_series, reference, lengths, ids in dataloaders['val_inter']:
                 inputs, targets = noisy_series.to(device), reference.to(device)
                 
-                # if renorm_inputs:
-                #     lengths = lengths.to(device) / 15000.
-                #     inputs /= lengths.view(outputs.shape[0],1,1)
-                    
                 # Forward pass
                 if learned_outputs_rescaling:
                     outputs = model(inputs[:, :, :-1], indices=ids.to(device))
@@ -635,9 +578,7 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
     
     scheduler.step()
 
-    # savings
-    
-    
+    # saving checkpoints
     if (epoch % save_every == 0 or \
         epoch == last_epoch + num_epochs):
         print("saving step - lastepo")
@@ -654,7 +595,6 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
         torch.save(checkpoint, PATH_lastepo_checkpoint)  
            
              
-    #critère1 de sauvegarde : meilleure en Mrégression intra (MAE)
     if val_intra_MAE_loss < best_loss[0]:
         print("saving step - bestloss")
         best_loss[0] = val_intra_MAE_loss
@@ -672,7 +612,7 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
         torch.save(checkpoint, PATH_bestloss_checkpoint)
         print(f"Model saved: Improved regression on val. intra to {best_loss[0]:.4f}")
 
-    #critère2 de sauvegarde : meilleure en Mrégression inter (MAE)
+
     if val_inter_MAE_loss < best_loss[1]:
         print("saving step - bestloss")
         best_loss[1] = val_inter_MAE_loss
@@ -690,7 +630,7 @@ for epoch in range(last_epoch + 1, last_epoch + 1 + num_epochs ):
         torch.save(checkpoint, PATH_bestloss_inter_checkpoint)
         print(f"Model saved: Improved regression on val. inter to {best_loss[1]:.4f}")
 
-    #critère3 de sauvegarde : meilleure en MSE intra 
+
     if val_intra_MSE_loss_preds < best_loss[2]:
         print("saving step - bestloss")
         best_loss[2] = val_intra_MSE_loss_preds
@@ -733,10 +673,4 @@ print('Training complete in {:.0f}m {:.0f}s'.format(
 print('Best val acc: {:4f}'.format(best_loss[0]))
 
 
-
-##############################################################################
-##############################################################################
-#%% save stats 
-##############################################################################
-##############################################################################
 

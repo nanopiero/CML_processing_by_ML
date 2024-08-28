@@ -15,7 +15,6 @@ import torch.nn.functional as F
 
 
 
-
 class TrainingDataset(Dataset):
     def __init__(self, root_dir, dict_indices, transform, mode='train', weighting="sqrt", daug_by_sum=False, get_link_length=False, generic_cml_index=False):
         """
@@ -50,9 +49,6 @@ class TrainingDataset(Dataset):
             
             for timestamp in sorted(ls(join(root_dir, self.dataset_subdir, ls_id_str))):
                 self.samples.append((ls_id, timestamp))
-                # If sum antilope over the link :
-                # x = data['stats_antilope'][timestamp]['stats_precip'][-1]
-                # If sum antilope on antennas :
                 x = data['stats_antilope'][timestamp]['stats_precip_AB'][0]
                 length = data['length']
                 weight = self.weighting_function(x)
@@ -91,28 +87,28 @@ class TrainingDataset(Dataset):
      
                 input_file2 = f'{ls_id2}_{timestamp2}_attenuations.pt'
                 target_file2 = f'{ls_id2}_{timestamp2}_mean_precip.pt'
-                # try:
-                inputs2 = torch.load(join(self.root_dir, self.dataset_subdir, str(ls_id2), timestamp2, input_file2))
-                targets2 = torch.load(join(self.root_dir, self.dataset_subdir, str(ls_id2), timestamp2, target_file2))
+                try:
+                    inputs2 = torch.load(join(self.root_dir, self.dataset_subdir, str(ls_id2), timestamp2, input_file2))
+                    targets2 = torch.load(join(self.root_dir, self.dataset_subdir, str(ls_id2), timestamp2, target_file2))
 
-                # transform
-                inputs, targets, start = self.transform(inputs, targets, ls_id)
-                inputs2, targets2, start2 = self.transform(inputs2, targets2, crop_start=start)  
-                
-                inputs += inputs2
-                
-                # print(torch.sum((targets < 0) * (targets2 < 0)))       
-                bad_targets = targets==-0.099
-                targets = (link_length * targets + link_length2 * targets2) / (link_length + link_length2)
-                targets[targets2==-10] = -10
-                targets[bad_targets] = -0.099
-                targets[targets2==-0.099] = -0.099
-                
-                link_length = link_length + link_length2 
+                    # transform
+                    inputs, targets, start = self.transform(inputs, targets, ls_id)
+                    inputs2, targets2, start2 = self.transform(inputs2, targets2, crop_start=start)  
+                    
+                    inputs += inputs2
+                    
+                    # print(torch.sum((targets < 0) * (targets2 < 0)))       
+                    bad_targets = targets==-0.099
+                    targets = (link_length * targets + link_length2 * targets2) / (link_length + link_length2)
+                    targets[targets2==-10] = -10
+                    targets[bad_targets] = -0.099
+                    targets[targets2==-0.099] = -0.099
+                    
+                    link_length = link_length + link_length2 
 
-                # except :
-                #     print("Failed loading file from " + join(self.root_dir, self.mode, str(ls_id), timestamp))
-                #     pass
+                except :
+                    print("Failed loading file from " + join(self.root_dir, self.mode, str(ls_id), timestamp))
+                    pass
             else:
                 if self.generic_cml_index and (torch.rand(1) > 0.9):
                     ls_id = -1
