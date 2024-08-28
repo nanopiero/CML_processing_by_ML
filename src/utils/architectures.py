@@ -3,7 +3,7 @@
 """
 load_archi function
 """
-
+import torch
 
 def load_archi(arch, nchannels, nclasses, size=64, dilation=1, atrous_rates=[6,12,18],fixed_cumul=False, additional_parameters=2):
     if arch == "UNet_causal":
