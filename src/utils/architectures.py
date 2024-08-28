@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-fn load_archi
+load_archi function
 """
 
 
@@ -24,7 +24,7 @@ def load_archi(arch, nchannels, nclasses, size=64, dilation=1, atrous_rates=[6,1
                                        fixed_cumul=fixed_cumul,
                                        additional_parameters=additional_parameters).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     if arch == "UNet_causal_5mn_atrous_rescale":
-        from ia.learning.dependencies.architectures_fcn import UNet_causal_5mn_atrous_rescale
+        from dependencies.architectures_fcn import UNet_causal_5mn_atrous_rescale
         model = UNet_causal_5mn_atrous_rescale(nchannels, nclasses, size, dilation=dilation, atrous_rates=atrous_rates, 
                                                fixed_cumul=fixed_cumul,
                                                additional_parameters=5000).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))

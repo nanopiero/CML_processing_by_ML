@@ -1,6 +1,5 @@
-# raincell_preprocessing
-
-Codes to train a FCN on 15 sec 2-channels attenuations.
+# CML_processing_by_ML
+Codes to train a Fully Conv. Net. on 15 sec 2-channels attenuations.
 
 - notebooks:
     - looks how fcn work on simulated data (blabla.ipynb)
