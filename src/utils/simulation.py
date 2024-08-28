@@ -261,7 +261,7 @@ def generate_pair(duration, distance):
 
 # Step 1: Define the Dataset Class
 class TensorPairDataset(Dataset):
-    def __init__(self, duration, cmlid2distance):
+    def __init__(self, duration, idx2distance):
         self.duration = duration
         self.idx2distance = idx2distance
         self.num_cmls = len(idx2distance)
