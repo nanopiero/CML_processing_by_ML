@@ -33,7 +33,7 @@ def load_archi(arch, nchannels, nclasses, size=64, dilation=1, atrous_rates=[6,1
 
     if arch == "UNet_causal_5mn_atrous_complex_rescale":
         from  src.utils.architectures_fcn import UNet_causal_5mn_atrous_complex_rescale
-        model = UNet_causal_5mn_atrous_complexe_rescale(nchannels, nclasses, size,
+        model = UNet_causal_5mn_atrous_complex_rescale(nchannels, nclasses, size,
                                     dilation=dilation, atrous_rates=atrous_rates, 
                                     fixed_cumul=fixed_cumul,
                                     additional_parameters=additional_parameters,
