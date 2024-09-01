@@ -282,7 +282,7 @@ class UNet_causal_5mn_atrous_complex_rescale(nn.Module):
         self.p = nn.Parameter(torch.ones(16))
         self.num_cmls = num_cmls
         self.linears1 = nn.ModuleList([nn.Linear(self.input_size_fc_layer, self.hidden_size_fc_layer) for i in range(self.num_cmls + 1)])
-        self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fclayer, 1) for i in range(self.num_cmls + 1)])
+        self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fc_layer, 1) for i in range(self.num_cmls + 1)])
         self.fixed_cumul = fixed_cumul
         self.pad_size = 20 - 1
         self.relu = nn.ReLU()
