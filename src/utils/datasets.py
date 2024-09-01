@@ -91,14 +91,15 @@ class TrainingDataset(Dataset):
                     inputs2 = torch.load(join(self.root_dir, self.dataset_subdir, str(ls_id2), timestamp2, input_file2))
                     targets2 = torch.load(join(self.root_dir, self.dataset_subdir, str(ls_id2), timestamp2, target_file2))
 
-                    # transform
+                    # apply transforms (targets2 registered)
                     inputs, targets, start = self.transform(inputs, targets, ls_id)
                     inputs2, targets2, start2 = self.transform(inputs2, targets2, crop_start=start)  
-                    
+
+                    # sum attenuations
                     inputs += inputs2
                     
-                    # print(torch.sum((targets < 0) * (targets2 < 0)))       
-                    bad_targets = targets==-0.099
+                    # define targets paying attention to         
+                    bad_targets = targets == -0.099
                     targets = (link_length * targets + link_length2 * targets2) / (link_length + link_length2)
                     targets[targets2==-10] = -10
                     targets[bad_targets] = -0.099
