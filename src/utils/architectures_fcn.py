@@ -462,9 +462,9 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
             x = self.linears1[1 + batch_id](inputs[i].transpose(0,1).contiguous())
             x = self.relu(x)
             x = self.linears2[1 + batch_id](x)
-            inputs[i, 0:self.nclasses] *= 1 + x.transpose(0,1).contiguous() # residual
+            inputs[i, 0:self.n_classes] *= 1 + x.transpose(0,1).contiguous() # residual
 
-        return inputs[:, 0:self.nclasses]
+        return inputs[:, 0:self.n_classes]
 
 
     def forward(self, x, batch_ids):
