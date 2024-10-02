@@ -307,10 +307,21 @@ class UNet_causal_5mn_atrous_complex_rescale(nn.Module):
             for param in linear.parameters():
                 param.requires_grad = True
 
+    def freeze_specific_parts(self):
+        # Unfreeze parameters in linears1 and linears2
+        for linear in self.linears1:
+            for param in linear.parameters():
+                param.requires_grad = False
+        
+        for linear in self.linears2:
+            for param in linear.parameters():
+                param.requires_grad = False
+
     def unfreeze_generic_parts(self):
         # Unfreeze all parameters
         for param in self.parameters():
             param.requires_grad = True
+
 
     def freeze_specific_parts(self):
         
