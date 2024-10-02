@@ -448,15 +448,10 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
     def rescale(self, inputs, batch_ids):
         for i in range(batch_ids.shape[0]):
             batch_id = batch_ids[i]
-            print(inputs.shape)
             x = self.linears1[1 + batch_id](inputs[i].transpose(0,1).contiguous())
-            print(x.shape)
             x = self.relu(x)
             x = self.linears2[1 + batch_id](x)
-            print(x.shape)
             inputs[i, [0]] *= 1 + x.transpose(0,1).contiguous() # residual
-            print(inputs.shape)
-            aaaa
 
         return inputs[:,[0]]
 
@@ -473,15 +468,15 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
         x = self.up4(x, x1)
         x = self.outc(x)
         if not self.fixed_cumul:
-            x[:,2:] = self.rescale(x[:,2:], batch_ids)
+            x = self.rescale(x, batch_ids)
             return x
         else:
-            z = x[:,2:]
+            z = x
             z = self.rescale(z, batch_ids)
             z = self.relu(z)
             out_ch = x.shape[1]
             z = F.pad(z, (self.pad_size, 0), "constant", 0)
             conv_filter = torch.ones((1, 1, 20), dtype=torch.float32, device = x.device)
             z = F.conv1d(z, conv_filter, groups=1)
-            x[:,2:] = z
+            x = z
             return x
