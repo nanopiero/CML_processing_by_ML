@@ -406,7 +406,7 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
         self.linears1 = nn.ModuleList([nn.Linear(self.input_size_fc_layer, self.hidden_size_fc_layer) for i in range(self.num_cmls + 1)])
         for linear in self.linears1[1:]:
             linear.load_state_dict(self.linears1[0].state_dict())
-        self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fc_layer, 1) for i in range(self.num_cmls + 1)])
+        self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fc_layer, self.n_classes) for i in range(self.num_cmls + 1)])
         for linear in self.linears2[1:]:
             linear.load_state_dict(self.linears2[0].state_dict())
         self.fixed_cumul = fixed_cumul
@@ -460,9 +460,9 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
             x = self.linears1[1 + batch_id](inputs[i].transpose(0,1).contiguous())
             x = self.relu(x)
             x = self.linears2[1 + batch_id](x)
-            inputs[i, [0]] *= 1 + x.transpose(0,1).contiguous() # residual
+            inputs[i, 0:self.nclasses] *= 1 + x.transpose(0,1).contiguous() # residual
 
-        return inputs[:,[0]]
+        return inputs[:, 0:self.nclasses]
 
 
     def forward(self, x, batch_ids):
