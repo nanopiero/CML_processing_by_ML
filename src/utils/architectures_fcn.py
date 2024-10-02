@@ -341,3 +341,86 @@ class UNet_causal_5mn_atrous_complex_rescale(nn.Module):
             z = F.conv1d(z, conv_filter, groups=1)
             x[:,2:] = z
             return x
+
+
+
+
+
+class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
+    def __init__(self, n_channels, n_classes, size=64, dilation=1, atrous_rates=[6, 12, 18], fixed_cumul=False, additional_parameters=2, num_cmls=1000, input_size_fc_layer=5, hidden_size_fc_layer=5):
+        super(UNet_causal_5mn_atrous_complex_rescale2, self).__init__()
+        self.inc = double_conv_causal(n_channels, size)  # Using double_conv_causal directly for simplicity
+        self.down1 = Down_causal(size, 2*size)
+        self.down2 = Down_causal(2*size, 4*size)
+        self.down3 = Down_causal(4*size, 8*size, pooling_kernel_size=5, pooling_stride=5)
+        self.down4 = Down_causal(8*size, 4*size, pooling=False, dilation=dilation)
+        self.atrous = ASPP(4*size, rates=atrous_rates)       
+        self.up2 = Up_causal(4*size, 2*size, kernel_size=5, stride=5)
+        self.up3 = Up_causal(2*size, size)
+        self.up4 = Up_causal(size, size)
+        self.outc = outconv(size, n_classes)
+        self.n_classes = n_classes
+        self.input_size_fc_layer = input_size_fc_layer
+        self.hidden_size_fc_layer = hidden_size_fc_layer
+        self.p = nn.Parameter(torch.ones(16))
+        self.num_cmls = num_cmls
+        self.linears1 = nn.ModuleList([nn.Linear(self.input_size_fc_layer, self.hidden_size_fc_layer) for i in range(self.num_cmls + 1)])
+        self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fc_layer, 1) for i in range(self.num_cmls + 1)])
+        self.fixed_cumul = fixed_cumul
+        self.pad_size = 20 - 1
+        self.relu = nn.ReLU()
+
+    def freeze_generic_parts(self):
+        # Freeze all parameters
+        for param in self.parameters():
+            param.requires_grad = False
+        
+        # Unfreeze parameters in linears1 and linears2
+        for linear in self.linears1:
+            for param in linear.parameters():
+                param.requires_grad = True
+        
+        for linear in self.linears2:
+            for param in linear.parameters():
+                param.requires_grad = True
+
+    def unfreeze_generic_parts(self):
+        # Unfreeze all parameters
+        for param in self.parameters():
+            param.requires_grad = True
+    
+    def rescale(self, inputs, batch_ids):
+        for i in range(batch_ids.shape[0]):
+            batch_id = batch_ids[i]
+            x = self.linears1[1 + batch_id](inputs[i].transpose(0,1).contiguous())
+            x = self.relu(x)
+            x = self.linears2[1 + batch_id](x)
+            inputs[i, [0]] *= 1 + x.transpose(0,1).contiguous() # residual
+
+        return inputs[:,[0]]
+
+
+    def forward(self, x, batch_ids):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x6 = self.atrous(x5)
+        x = self.up2(x6, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        x = self.outc(x)
+        if not self.fixed_cumul:
+            x[:,2:] = self.rescale(x[:,2:], batch_ids)
+            return x
+        else:
+            z = x[:,2:]
+            z = self.rescale(z, batch_ids)
+            z = self.relu(z)
+            out_ch = x.shape[1]
+            z = F.pad(z, (self.pad_size, 0), "constant", 0)
+            conv_filter = torch.ones((1, 1, 20), dtype=torch.float32, device = x.device)
+            z = F.conv1d(z, conv_filter, groups=1)
+            x[:,2:] = z
+            return x
