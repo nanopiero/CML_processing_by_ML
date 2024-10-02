@@ -282,7 +282,13 @@ class UNet_causal_5mn_atrous_complex_rescale(nn.Module):
         self.p = nn.Parameter(torch.ones(16))
         self.num_cmls = num_cmls
         self.linears1 = nn.ModuleList([nn.Linear(self.input_size_fc_layer, self.hidden_size_fc_layer) for i in range(self.num_cmls + 1)])
+        for linear in self.linears1:
+            linear.weight.data.fill_(0.)
+            linear.bias.data.fill_(0.)
         self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fc_layer, 1) for i in range(self.num_cmls + 1)])
+        for linear in self.linears2:
+            linear.weight.data.fill_(0.)
+            linear.bias.data.fill_(0.)
         self.fixed_cumul = fixed_cumul
         self.pad_size = 20 - 1
         self.relu = nn.ReLU()
@@ -305,7 +311,29 @@ class UNet_causal_5mn_atrous_complex_rescale(nn.Module):
         # Unfreeze all parameters
         for param in self.parameters():
             param.requires_grad = True
-    
+
+    def freeze_specific_parts(self):
+        
+        # Unfreeze parameters in linears1 and linears2
+        for linear in self.linears1:
+            for param in linear.parameters():
+                param.requires_grad = False
+        
+        for linear in self.linears2:
+            for param in linear.parameters():
+                param.requires_grad = False
+
+    def unfreeze_specific_parts(self):
+        # Unfreeze parameters in linears1 and linears2
+        for linear in self.linears1:
+            for param in linear.parameters():
+                param.requires_grad = True
+        
+        for linear in self.linears2:
+            for param in linear.parameters():
+                param.requires_grad = True
+
+
     def rescale(self, inputs, batch_ids):
         for i in range(batch_ids.shape[0]):
             batch_id = batch_ids[i]
@@ -365,11 +393,13 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
         self.p = nn.Parameter(torch.ones(16))
         self.num_cmls = num_cmls
         self.linears1 = nn.ModuleList([nn.Linear(self.input_size_fc_layer, self.hidden_size_fc_layer) for i in range(self.num_cmls + 1)])
-        self.linears1.weight.data.fill_(0.)
-        self.linears1.bias.data.fill_(0.)
+        for linear in self.linears1:
+            linear.weight.data.fill_(0.)
+            linear.bias.data.fill_(0.)
         self.linears2 = nn.ModuleList([nn.Linear(self.hidden_size_fc_layer, 1) for i in range(self.num_cmls + 1)])
-        self.linears2.weight.data.fill_(0.)
-        self.linears2.bias.data.fill_(0.)
+        for linear in self.linears2:
+            linear.weight.data.fill_(0.)
+            linear.bias.data.fill_(0.)
         self.fixed_cumul = fixed_cumul
         self.pad_size = 20 - 1
         self.relu = nn.ReLU()
@@ -392,7 +422,29 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
         # Unfreeze all parameters
         for param in self.parameters():
             param.requires_grad = True
-    
+
+    def freeze_specific_parts(self):
+        
+        # Unfreeze parameters in linears1 and linears2
+        for linear in self.linears1:
+            for param in linear.parameters():
+                param.requires_grad = False
+        
+        for linear in self.linears2:
+            for param in linear.parameters():
+                param.requires_grad = False
+
+    def unfreeze_specific_parts(self):
+        
+        # Unfreeze parameters in linears1 and linears2
+        for linear in self.linears1:
+            for param in linear.parameters():
+                param.requires_grad = True
+        
+        for linear in self.linears2:
+            for param in linear.parameters():
+                param.requires_grad = True
+
     def rescale(self, inputs, batch_ids):
         for i in range(batch_ids.shape[0]):
             batch_id = batch_ids[i]
