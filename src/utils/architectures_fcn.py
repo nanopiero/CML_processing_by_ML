@@ -397,7 +397,7 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
         self.up2 = Up_causal(4*size, 2*size, kernel_size=5, stride=5)
         self.up3 = Up_causal(2*size, size)
         self.up4 = Up_causal(size, size)
-        self.outc = outconv(size, n_classes)
+        self.outc = outconv(size, self.input_size_fc_layer)
         self.n_classes = n_classes
         self.input_size_fc_layer = input_size_fc_layer
         self.hidden_size_fc_layer = hidden_size_fc_layer
