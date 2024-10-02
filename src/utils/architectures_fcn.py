@@ -448,10 +448,15 @@ class UNet_causal_5mn_atrous_multiplicative_rescale(nn.Module):
     def rescale(self, inputs, batch_ids):
         for i in range(batch_ids.shape[0]):
             batch_id = batch_ids[i]
+            print(inputs.shape)
             x = self.linears1[1 + batch_id](inputs[i].transpose(0,1).contiguous())
+            print(x.shape)
             x = self.relu(x)
             x = self.linears2[1 + batch_id](x)
+            print(x.shape)
             inputs[i, [0]] *= 1 + x.transpose(0,1).contiguous() # residual
+            print(inputs.shape)
+            aaaa
 
         return inputs[:,[0]]
 
