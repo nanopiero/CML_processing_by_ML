@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Architectures 
+Architectures:
 - UNet_causal_5mn_atrous (no terminal scaling step)
 - UNet_causal_5mn_atrous_rescale (terminal scaling step with a unique parameter)
 - UNet_causal_5mn_atrous_complex_rescale (terminal scaling step with 2-layers perceptron -additive form)
