@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 Architectures 
-- FCN: UNet 1 D
+- UNet_causal_5mn_atrous (no terminal scaling step)
+- UNet_causal_5mn_atrous_rescale (terminal scaling step with a unique parameter)
+- UNet_causal_5mn_atrous_complex_rescale (terminal scaling step with 2-layers perceptron -additive form)
+- UNet_causal_5mn_atrous_multiplicative_rescale (terminal scaling step with 2-layers perceptron -multiplicative form)
 """
 
 import torch
@@ -10,10 +13,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 ###############################################################################################
-################################   modules        #############################################
+################################  building blocks  ############################################
 
-
-# For a causal UNet
 
 class double_conv_causal(nn.Module):
     '''(conv => BN => ReLU) * 2, with causal convolutions that preserve input size'''
@@ -169,9 +170,8 @@ class ASPP(nn.Module):
 
 
 
-########################################################################################################
-########################################################################################################
-########################################################################################################
+###############################################################################################
+################################     1 D UNets     ############################################
 
 
 class UNet_causal_5mn_atrous(nn.Module):
